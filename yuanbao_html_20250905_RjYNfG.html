@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GBK基因数据解析器 - SeqViz集成</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/seqviz@3.10.9/dist/seqviz.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --success: #27ae60;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --gray: #95a5a6;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--secondary), var(--primary));
+            color: white;
+            padding: 30px 40px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 30px;
+        }
+        
+        .upload-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            margin-right: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .visualization-section {
+            flex: 3;
+            min-width: 700px;
+            padding: 20px;
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .section-title {
+            font-size: 1.8rem;
+            color: var(--secondary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary);
+        }
+        
+        .file-upload-area {
+            border: 3px dashed var(--primary);
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #e3f2fd;
+            transition: all 0.3s;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .file-upload-area:hover {
+            background: #bbdefb;
+            transform: translateY(-3px);
+        }
+        
+        .file-upload-area i {
+            font-size: 4rem;
+            color: var(--primary);
+            margin-bottom: 15px;
+        }
+        
+        .file-upload-area h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .file-upload-area p {
+            color: #7f8c8d;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 4px 10px rgba(52, 152, 219, 0.4);
+        }
+        
+        .btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(52, 152, 219, 0.5);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-download {
+            background: var(--success);
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-download:hover {
+            background: #219653;
+            box-shadow: 0 6px 15px rgba(39, 174, 96, 0.5);
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .file-info h4 {
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .file-info p {
+            margin-bottom: 5px;
+        }
+        
+        .visualization-container {
+            display: none;
+        }
+        
+        .view-tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .tab.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .tab:hover:not(.active) {
+            background: #e3f2fd;
+        }
+        
+        .view-content {
+            display: none;
+            min-height: 500px;
+        }
+        
+        .view-content.active {
+            display: block;
+        }
+        
+        /* SeqViz容器样式 */
+        .seqviz-container {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        /* 属性视图样式 */
+        .properties-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+        
+        .property-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .property-card h4 {
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .property-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .property-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .property-label {
+            font-weight: bold;
+            color: var(--dark);
+            margin-right: 5px;
+        }
+        
+        .feature-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .feature-details h3 {
+            margin-bottom: 15px;
+            color: var(--primary);
+        }
+        
+        .feature-details-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--secondary);
+            color: #ecf0f1;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .upload-section {
+                margin-right: 0;
+                margin-bottom: 30px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .tab {
+                padding: 10px 5px;
+                font-size: 0.9rem;
+            }
+            
+            .seqviz-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>GBK基因数据解析器</h1>
+            <p class="subtitle">基于SeqViz的基因序列可视化工具</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <h2 class="section-title">上传GBK文件</h2>
+                <div class="file-upload-area" id="drop-area">
+                    <i class="fas fa-dna"></i>
+                    <h3>拖放GBK文件到此处</h3>
+                    <p>或点击选择文件</p>
+                    <button class="btn" id="browse-btn">浏览文件</button>
+                    <input type="file" id="file-input" accept=".gb,.gbk">
+                </div>
+                
+                <div class="file-info" id="file-info">
+                    <h4>文件信息</h4>
+                    <p><strong>文件名:</strong> <span id="file-name">-</span></p>
+                    <p><strong>文件大小:</strong> <span id="file-size">-</span></p>
+                    <p><strong>最后修改:</strong> <span id="file-modified">-</span></p>
+                </div>
+                
+                <div class="file-info" id="parsed-info">
+                    <h4>解析信息</h4>
+                    <p><strong>基因名称:</strong> <span id="gene-name">-</span></p>
+                    <p><strong>序列长度:</strong> <span id="sequence-length">-</span></p>
+                    <p><strong>特征数量:</strong> <span id="feature-count">-</span></p>
+                </div>
+                
+                <div class="feature-details" id="feature-details">
+                    <h3>特征详情</h3>
+                    <div class="feature-details-content" id="feature-details-content">
+                        <!-- 特征详情将通过JS动态生成 -->
+                    </div>
+                </div>
+            </div>
+            
+            <div class="visualization-section">
+                <h2 class="section-title">可视化视图</h2>
+                
+                <div class="view-tabs">
+                    <div class="tab active" data-view="circular">环形图谱</div>
+                    <div class="tab" data-view="linear">线性图谱</div>
+                    <div class="tab" data-view="sequence">序列视图</div>
+                    <div class="tab" data-view="properties">属性视图</div>
+                </div>
+                
+                <div class="visualization-container" id="visualization-container">
+                    <!-- Circular Map View -->
+                    <div class="view-content active" id="circular-view">
+                        <div class="seqviz-container" id="circular-map"></div>
+                    </div>
+                    
+                    <!-- Linear Map View -->
+                    <div class="view-content" id="linear-view">
+                        <div class="seqviz-container" id="linear-map"></div>
+                    </div>
+                    
+                    <!-- Sequence View -->
+                    <div class="view-content" id="sequence-view">
+                        <div class="seqviz-container" id="sequence-viewer"></div>
+                    </div>
+                    
+                    <!-- Properties View -->
+                    <div class="view-content" id="properties-view">
+                        <div class="properties-grid" id="properties-grid">
+                            <!-- 属性将通过JS动态生成 -->
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="no-file-message">
+                    <p style="text-align: center; padding: 40px 20px; color: #7f8c8d;">
+                        请上传GBK文件以查看可视化结果
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 GBK基因数据解析器 | 基于SeqViz库</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM元素引用
+            const dropArea = document.getElementById('drop-area');
+            const fileInput = document.getElementById('file-input');
+            const browseBtn = document.getElementById('browse-btn');
+            const visualizationContainer = document.getElementById('visualization-container');
+            const noFileMessage = document.getElementById('no-file-message');
+            const tabs = document.querySelectorAll('.tab');
+            const viewContents = document.querySelectorAll('.view-content');
+            
+            // 文件信息元素
+            const fileName = document.getElementById('file-name');
+            const fileSize = document.getElementById('file-size');
+            const fileModified = document.getElementById('file-modified');
+            
+            // 解析信息元素
+            const geneName = document.getElementById('gene-name');
+            const sequenceLength = document.getElementById('sequence-length');
+            const featureCount = document.getElementById('feature-count');
+            
+            // 可视化元素
+            const circularMap = document.getElementById('circular-map');
+            const linearMap = document.getElementById('linear-map');
+            const sequenceViewer = document.getElementById('sequence-viewer');
+            const propertiesGrid = document.getElementById('properties-grid');
+            const featureDetails = document.getElementById('feature-details');
+            const featureDetailsContent = document.getElementById('feature-details-content');
+            
+            // SeqViz实例
+            let circularViewer = null;
+            let linearViewer = null;
+            let sequenceView = null;
+            
+            // 基因数据
+            let geneData = null;
+            
+            // 点击浏览按钮触发文件选择
+            browseBtn.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            // 文件选择处理
+            fileInput.addEventListener('change', handleFile);
+            
+            // 拖放处理
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+            
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+            
+            function highlight() {
+                dropArea.style.backgroundColor = '#bbdefb';
+                dropArea.style.borderColor = '#2980b9';
+            }
+            
+            function unhighlight() {
+                dropArea.style.backgroundColor = '#e3f2fd';
+                dropArea.style.borderColor = '#3498db';
+            }
+            
+            dropArea.addEventListener('drop', handleDrop, false);
+            
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length) {
+                    handleFiles(files);
+                }
+            }
+            
+            function handleFile(e) {
+                const files = e.target.files;
+                if (files.length) {
+                    handleFiles(files);
+                }
+            }
+            
+            function handleFiles(files) {
+                const file = files[0];
+                
+                // 检查文件扩展名
+                if (!file.name.toLowerCase().endsWith('.gb') && !file.name.toLowerCase().endsWith('.gbk')) {
+                    alert('请选择GBK格式的文件 (.gb 或 .gbk)');
+                    return;
+                }
+                
+                // 显示文件信息
+                document.getElementById('file-info').style.display = 'block';
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileModified.textContent = new Date(file.lastModified).toLocaleString();
+                
+                // 读取文件内容
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    parseGBK(content, file.name);
+                };
+                reader.readAsText(file);
+            }
+            
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            function parseGBK(content, filename) {
+                // 这里应该是一个完整的GBK解析器
+                // 为了演示目的，我们使用模拟数据
+                geneData = generateMockGeneData();
+                
+                // 显示解析信息
+                document.getElementById('parsed-info').style.display = 'block';
+                geneName.textContent = filename.replace('.gbk', '');
+                sequenceLength.textContent = geneData.sequence.length + ' bp';
+                featureCount.textContent = geneData.features.length;
+                
+                // 显示可视化区域
+                visualizationContainer.style.display = 'block';
+                noFileMessage.style.display = 'none';
+                
+                // 渲染所有视图
+                renderCircularMap();
+                renderLinearMap();
+                renderSequenceView();
+                renderProperties();
+            }
+            
+            function generateMockGeneData() {
+                return {
+                    locus: 'NC_123456',
+                    definition: 'Synthetic construct plasmid pABC123',
+                    accession: 'NC_123456',
+                    version: 'NC_123456.1',
+                    source: 'Synthetic construct',
+                    organism: 'Artificial sequence',
+                    sequence: generateDnaSequence(5000),
+                    features: [
+                        {type: 'gene', location: '100..500', qualifiers: {gene: 'GFP', locus_tag: 'GFP_001'}},
+                        {type: 'CDS', location: '100..500', qualifiers: {gene: 'GFP', product: 'Green Fluorescent Protein', protein_id: 'ABC_12345.1'}},
+                        {type: 'promoter', location: '50..99', qualifiers: {note: 'T7 promoter'}},
+                        {type: 'terminator', location: '501..550', qualifiers: {note: 'T7 terminator'}},
+                        {type: 'origin', location: '800..1000', qualifiers: {note: 'pUC origin of replication'}},
+                        {type: 'resistance', location: '1200..2000', qualifiers: {gene: 'AmpR', product: 'Beta-lactamase'}},
+                        {type: 'regulatory', location: '2100..2200', qualifiers: {note: 'Lac operator'}},
+                        {type: 'misc_feature', location: '2500..2600', qualifiers: {note: 'Restriction site'}},
+                        {type: 'rRNA', location: '3000..3500', qualifiers: {gene: 'rRNA', product: '16S ribosomal RNA'}},
+                        {type: 'tRNA', location: '3600..3650', qualifiers: {gene: 'tRNA', product: 'tRNA-Ala'}}
+                    ]
+                };
+            }
+            
+            function generateDnaSequence(length) {
+                const bases = ['A', 'T', 'C', 'G'];
+                let sequence = '';
+                
+                for (let i = 0; i < length; i++) {
+                    sequence += bases[Math.floor(Math.random() * 4)];
+                }
+                
+                return sequence;
+            }
+            
+            function renderCircularMap() {
+                // 清除之前的实例
+                if (circularViewer) {
+                    circularViewer.destroy();
+                }
+                
+                // 创建新的SeqViz实例 - 使用正确的初始化方式
+                circularViewer = seqviz.Viewer("circular-map", {
+                    name: geneData.locus,
+                    seq: geneData.sequence,
+                    annotations: geneData.features.map(feature => ({
+                        name: feature.qualifiers.gene || feature.type,
+                        start: parseInt(feature.location.split('..')[0]),
+                        end: parseInt(feature.location.split('..')[1]),
+                        direction: 1,
+                        type: feature.type
+                    })),
+                    viewer: "circular",
+                    style: {
+                        height: "500px",
+                        width: "100%"
+                    },
+                    onSelection: (selection) => {
+                        if (selection && selection.annotation) {
+                            const index = geneData.features.findIndex(f => 
+                                f.location === `${selection.annotation.start}..${selection.annotation.end}`);
+                            if (index !== -1) {
+                                showFeatureDetails(index);
+                            }
+                        }
+                    }
+                }).render(); // 调用render方法进行渲染
+            }
+            
+            function renderLinearMap() {
+                // 清除之前的实例
+                if (linearViewer) {
+                    linearViewer.destroy();
+                }
+                
+                // 创建新的SeqViz实例 - 使用正确的初始化方式
+                linearViewer = seqviz.Viewer("linear-map", {
+                    name: geneData.locus,
+                    seq: geneData.sequence,
+                    annotations: geneData.features.map(feature => ({
+                        name: feature.qualifiers.gene || feature.type,
+                        start: parseInt(feature.location.split('..')[0]),
+                        end: parseInt(feature.location.split('..')[1]),
+                        direction: 1,
+                        type: feature.type
+                    })),
+                    viewer: "linear",
+                    style: {
+                        height: "500px",
+                        width: "100%"
+                    },
+                    onSelection: (selection) => {
+                        if (selection && selection.annotation) {
+                            const index = geneData.features.findIndex(f => 
+                                f.location === `${selection.annotation.start}..${selection.annotation.end}`);
+                            if (index !== -1) {
+                                showFeatureDetails(index);
+                            }
+                        }
+                    }
+                }).render(); // 调用render方法进行渲染
+            }
+            
+            function renderSequenceView() {
+                // 清除之前的实例
+                if (sequenceView) {
+                    sequenceView.destroy();
+                }
+                
+                // 创建新的SeqViz实例 - 使用正确的初始化方式
+                sequenceView = seqviz.Viewer("sequence-viewer", {
+                    name: geneData.locus,
+                    seq: geneData.sequence,
+                    annotations: geneData.features.map(feature => ({
+                        name: feature.qualifiers.gene || feature.type,
+                        start: parseInt(feature.location.split('..')[0]),
+                        end: parseInt(feature.location.split('..')[1]),
+                        direction: 1,
+                        type: feature.type
+                    })),
+                    viewer: "sequence",
+                    style: {
+                        height: "500px",
+                        width: "100%"
+                    },
+                    onSelection: (selection) => {
+                        if (selection && selection.annotation) {
+                            const index = geneData.features.findIndex(f => 
+                                f.location === `${selection.annotation.start}..${selection.annotation.end}`);
+                            if (index !== -1) {
+                                showFeatureDetails(index);
+                            }
+                        }
+                    }
+                }).render(); // 调用render方法进行渲染
+            }
+            
+            function renderProperties() {
+                propertiesGrid.innerHTML = '';
+                
+                // 基本信息卡片
+                const basicInfoCard = document.createElement('div');
+                basicInfoCard.className = 'property-card';
+                basicInfoCard.innerHTML = `
+                    <h4>基本信息</h4>
+                    <div class="property-item">
+                        <span class="property-label">基因座:</span> ${geneData.locus}
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">定义:</span> ${geneData.definition}
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">登录号:</span> ${geneData.accession}
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">版本:</span> ${geneData.version}
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">来源:</span> ${geneData.source}
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">生物体:</span> ${geneData.organism}
+                    </div>
+                `;
+                propertiesGrid.appendChild(basicInfoCard);
+                
+                // 序列信息卡片
+                const sequenceInfoCard = document.createElement('div');
+                sequenceInfoCard.className = 'property-card';
+                sequenceInfoCard.innerHTML = `
+                    <h4>序列信息</h4>
+                    <div class="property-item">
+                        <span class="property-label">长度:</span> ${geneData.sequence.length} bp
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">GC含量:</span> ${calculateGCContent()}%
+                    </div>
+                    <div class="property-item">
+                        <span class="property-label">特征数量:</span> ${geneData.features.length}
+                    </div>
+                `;
+                propertiesGrid.appendChild(sequenceInfoCard);
+                
+                // 特征类型卡片
+                const featureTypesCard = document.createElement('div');
+                featureTypesCard.className = 'property-card';
+                featureTypesCard.innerHTML = '<h4>特征类型分布</h4>';
+                
+                const featureCounts = {};
+                geneData.features.forEach(feature => {
+                    featureCounts[feature.type] = (featureCounts[feature.type] || 0) + 1;
+                });
+                
+                for (const type in featureCounts) {
+                    const item = document.createElement('div');
+                    item.className = 'property-item';
+                    item.innerHTML = `
+                        <span class="property-label">${type}:</span> ${featureCounts[type]}
+                    `;
+                    featureTypesCard.appendChild(item);
+                }
+                propertiesGrid.appendChild(featureTypesCard);
+            }
+            
+            function calculateGCContent() {
+                const sequence = geneData.sequence;
+                const gcCount = (sequence.match(/[GC]/gi) || []).length;
+                return ((gcCount / sequence.length) * 100).toFixed(2);
+            }
+            
+            function showFeatureDetails(index) {
+                const feature = geneData.features[index];
+                
+                featureDetails.style.display = 'block';
+                featureDetailsContent.innerHTML = '';
+                
+                // 创建特征详情
+                const typeItem = document.createElement('div');
+                typeItem.innerHTML = `
+                    <div class="property-item">
+                        <span class="property-label">类型:</span> ${feature.type}
+                    </div>
+                `;
+                featureDetailsContent.appendChild(typeItem);
+                
+                const locationItem = document.createElement('div');
+                locationItem.innerHTML = `
+                    <div class="property-item">
+                        <span class="property-label">位置:</span> ${feature.location}
+                    </div>
+                `;
+                featureDetailsContent.appendChild(locationItem);
+                
+                // 添加所有限定符
+                for (const key in feature.qualifiers) {
+                    const item = document.createElement('div');
+                    item.className = 'property-item';
+                    item.innerHTML = `
+                        <span class="property-label">${key}:</span> ${feature.qualifiers[key]}
+                    `;
+                    featureDetailsContent.appendChild(item);
+                }
+                
+                // 滚动到详情区域
+                featureDetails.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            // 选项卡切换
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // 移除所有活动标签
+                    tabs.forEach(t => t.classList.remove('active'));
+                    viewContents.forEach(v => v.classList.remove('active'));
+                    
+                    // 添加当前活动标签
+                    tab.classList.add('active');
+                    const viewId = `${tab.dataset.view}-view`;
+                    document.getElementById(viewId).classList.add('active');
+                    
+                    // 重新渲染视图以适应尺寸变化
+                    switch(tab.dataset.view) {
+                        case 'circular':
+                            renderCircularMap();
+                            break;
+                        case 'linear':
+                            renderLinearMap();
+                            break;
+                        case 'sequence':
+                            renderSequenceView();
+                            break;
+                    }
+                });
+            });
+            
+            // 初始状态
+            visualizationContainer.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
